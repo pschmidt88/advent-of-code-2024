@@ -6,33 +6,22 @@ fun main() {
         var guardPosition: Pair<Int, Int> = 0 to 0
         val obstaclePositions: MutableList<Pair<Int, Int>> = mutableListOf()
 
-        input.forEachIndexed { x, line ->
+        input.forEachIndexed { y, line ->
             Pattern.compile("(#)|(\\^)").toRegex().findAll(line).forEach {
                 when (it.value) {
-                    "#" -> obstaclePositions.add(Pair(x, it.range.first))
-                    "^" -> guardPosition = Pair(x, it.range.first)
+                    "#" -> obstaclePositions.add(it.range.first to y)
+                    "^" -> guardPosition = it.range.first to y
                 }
             }
         }
 
-        val map = Map(Pair(input.first().length, input.size), guardPosition, obstaclePositions)
+        val game = Game(Pair(input.first().length-1, input.size-1), guardPosition, obstaclePositions)
 
-        while (map.guardOnMap()) {
-            map.moveGuard()
+        while (game.guardOnMap()) {
+            game.moveGuard()
         }
-        // class Map {
-        // val dimensions = input.size to input.first().size
-        // val guardPosition = Pair(x,y)
-        // val visited = setOf(Pair(x,y))
-        // val obstaclePositions = List<Pair<x,y>>
-        //}
 
-        // while (map.guardOnMap()) {
-        //   map.moveGuard()
-        // }
-
-        // return map.visitedPositions
-        return 0
+        return game.visited.size.also { it.println() }
     }
 
     fun part2(input: List<String>): Int {
@@ -50,11 +39,16 @@ fun main() {
     part2(input).println()
 }
 
-data class Map(val dimension: Pair<Int, Int>,
-               val guardPosition: Pair<Int, Int>,
-               val obstaclePositions: List<Pair<Int, Int>>
+data class Game(val dimension: Pair<Int, Int>,
+                val startPosition: Pair<Int, Int>,
+                val obstaclePositions: List<Pair<Int, Int>>
 ) {
-    // TODO: guard direction
+    private enum class Direction {
+        UP, DOWN, LEFT, RIGHT
+    }
+
+    private var guardPosition = startPosition
+    private var direction: Direction = Direction.UP
 
     fun guardOnMap(): Boolean {
         return (0 <= guardPosition.first && guardPosition.first <= dimension.first) &&
@@ -62,9 +56,28 @@ data class Map(val dimension: Pair<Int, Int>,
     }
 
     fun moveGuard() {
-        TODO("move me and add visited fields to visited")
+        visited.add(guardPosition)
+
+        // check if move in direction is possible
+        val nextPosition = when (direction) {
+            Direction.UP -> guardPosition.first to guardPosition.second - 1
+            Direction.DOWN -> guardPosition.first to guardPosition.second + 1
+            Direction.LEFT -> guardPosition.first - 1 to guardPosition.second
+            Direction.RIGHT -> guardPosition.first + 1 to guardPosition.second
+        }
+
+        if (obstaclePositions.contains(nextPosition)) {
+            direction = when (direction) {
+                Direction.UP -> Direction.RIGHT
+                Direction.RIGHT -> Direction.DOWN
+                Direction.DOWN -> Direction.LEFT
+                Direction.LEFT -> Direction.UP
+            }
+            return
+        }
+
+        guardPosition = nextPosition
     }
 
     val visited: MutableSet<Pair<Int, Int>> = mutableSetOf(guardPosition)
-
 }
